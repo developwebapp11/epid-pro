@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EPI-PRO | Sistem Cerdas Epidemiolog Puskesmas & Penanggulangan KLB</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #f8fafc;
+    }
+    .glass-header {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(12px);
+    }
+    .tab-active {
+      background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+      color: #ffffff !important;
+      box-shadow: 0 4px 12px rgba(13, 148, 136, 0.28);
+    }
+    @media print {
+      .no-print { display: none !important; }
+      .print-area { box-shadow: none !important; border: none !important; padding: 0 !important; }
+    }
+  </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+  <!-- MODAL KUNCI DEMO 5 HARI / AKTIVASI LISENSI -->
+  <div id="activationModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-teal-100">
+      <div class="w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl mx-auto mb-4">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+      <h3 id="modalTitle" class="text-xl font-bold text-center text-slate-900 mb-2">Aktivasi Lisensi EPI-PRO</h3>
+      <p id="modalDesc" class="text-sm text-slate-600 text-center mb-5">
+        Masa uji coba akun Demo (5 Hari) Anda telah berakhir atau Anda ingin mengaktifkan Lisensi Penuh (PRO). Silakan hubungi Admin untuk mendapatkan Kode Aktivasi Resmi.
+      </p>
+
+      <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4">
+        <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Masukkan Kode Aktivasi / Lisensi</label>
+        <input type="password" id="licenseKeyInput" placeholder="Masukkan kode lisensi dari Admin..." class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+        <p id="licenseError" class="text-xs text-rose-600 mt-1.5 hidden">Kode aktivasi tidak valid. Silakan hubungi Admin via WhatsApp.</p>
+      </div>
+
+      <div class="flex flex-col gap-2.5">
+        <button onclick="verifyLicenseKey()" class="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl text-sm transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-key"></i> Aktifkan Aplikasi Sekarang
+        </button>
+        <a href="https://wa.me/6285832288819?text=Halo%20Admin%2C%20saya%20ingin%20melakukan%20aktivasi%20lisensi%20aplikasi%20EPI-PRO%20(Epidemiolog%20Puskesmas%20Ahli)." target="_blank" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm transition flex items-center justify-center gap-2">
+          <i class="fa-brands fa-whatsapp text-base"></i> Hubungi Admin (WA: 085832288819)
+        </a>
+        <button id="closeModalBtn" onclick="closeActivationModal()" class="w-full py-2 text-slate-500 hover:text-slate-700 text-xs font-medium">
+          Kembali ke Mode Demo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL PENGATURAN AI & PROFIL PUSKESMAS -->
+  <div id="settingsModal" class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b pb-3 mb-4">
+        <div class="flex items-center gap-2.5">
+          <i class="fa-solid fa-sliders text-teal-600 text-lg"></i>
+          <h3 class="font-bold text-slate-900">Konfigurasi Instansi & Paket AI Pengguna</h3>
+        </div>
+        <button onclick="toggleSettingsModal(false)" class="text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4 text-sm">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Nama Instansi / Puskesmas / Dinkes</label>
+          <input type="text" id="cfgPuskesmas" placeholder="Contoh: UPTD Puskesmas Sukadana" class="w-full px-3 py-2 rounded-lg border border-slate-300" />
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Kabupaten / Kota</label>
+            <input type="text" id="cfgKabupaten" placeholder="Contoh: Kabupaten Lampung Timur" class="w-full px-3 py-2 rounded-lg border border-slate-300" />
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Nama Epidemiolog / Petugas PE</label>
+            <input type="text" id="cfgPetugas" placeholder="Contoh: Sudarsih, SKM., M.Epid" class="w-full px-3 py-2 rounded-lg border border-slate-300" />
+          </div>
+        </div>
+
+        <hr class="my-3" />
+
+        <div class="bg-teal-50/70 border border-teal-200 rounded-xl p-3.5 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-teal-900 flex items-center gap-1.5">
+              <i class="fa-solid fa-microchip"></i> Paket AI Online Pengguna (BYOK)
+            </span>
+            <span class="text-[11px] bg-teal-600 text-white px-2 py-0.5 rounded-full font-semibold">Mendukung Gemini 3.8</span>
+          </div>
+          <p class="text-xs text-slate-600">
+            Masukkan API Key AI Anda sendiri agar asisten epidemiolog dapat menjawab pertanyaan kontekstual secara *real-time* sesuai paket AI terbaru. Jika dikosongkan, sistem otomatis menggunakan **Engine Pakar Epidemiologi Internal**.
+          </p>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Pilih Model AI</label>
+            <select id="cfgAiModel" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm">
+              <option value="gemini-3.8-flash">Gemini 3.8 Flash (Rekomendasi Terbaru & Cepat)</option>
+              <option value="gemini-3.8-pro">Gemini 3.8 Pro (Analisis Epidemiologi Kompleks)</option>
+              <option value="gemini-2.5-flash">Gemini 2.5 Flash (Kompatibilitas Standar)</option>
+              <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">API Key Gemini Anda</label>
+            <input type="password" id="cfgApiKey" placeholder="AIzaSy..." class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">URL Web App Google Apps Script (Opsional - Penyimpanan 1 Folder Drive)</label>
+            <input type="url" id="cfgGasUrl" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm" />
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end gap-2">
+        <button onclick="toggleSettingsModal(false)" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-600 text-sm font-medium">Batal</button>
+        <button onclick="saveAppSettings()" class="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold">Simpan Pengaturan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEADER UTAMA -->
+  <header class="glass-header sticky top-0 z-40 border-b border-slate-200 no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-teal-600 to-emerald-700 text-white flex items-center justify-center shadow-md shadow-teal-600/20">
+          <i class="fa-solid fa-virus-covid-slash text-xl"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-extrabold text-lg sm:text-xl tracking-tight text-slate-900">EPI-PRO</h1>
+            <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 border border-teal-200">Epidemiolog Puskesmas Ahli</span>
+          </div>
+          <p id="headerSubtitle" class="text-xs text-slate-500">Sistem Penyelidikan Epidemiologi (PE), SKDR/EWARS, Kalkulator KLB & Evaluasi AAR</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- Indikator Masa Demo / Lisensi -->
+        <button onclick="openActivationModal()" id="demoBadge" class="px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-clock"></i>
+          <span id="demoStatusText">Memuat Status...</span>
+        </button>
+
+        <button onclick="toggleSettingsModal(true)" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-gear text-teal-600"></i>
+          <span class="hidden sm:inline">Pengaturan & AI</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- NAVIGASI TAB MODUL -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2 overflow-x-auto border-t border-slate-100">
+      <div class="flex items-center gap-2 min-w-max">
+        <button onclick="switchTab('konsultan')" id="tab-konsultan" class="tab-btn tab-active px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 transition flex items-center gap-2">
+          <i class="fa-solid fa-user-doctor"></i> Konsultan Kontekstual KLB
+        </button>
+        <button onclick="switchTab('kalkulator')" id="tab-kalkulator" class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 transition flex items-center gap-2">
+          <i class="fa-solid fa-calculator"></i> Kalkulator AR, CFR & RR (2x2)
+        </button>
+        <button onclick="switchTab('linelist')" id="tab-linelist" class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 transition flex items-center gap-2">
+          <i class="fa-solid fa-chart-column"></i> Line List & Kurva Epidemik
+        </button>
+        <button onclick="switchTab('dokumen')" id="tab-dokumen" class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 transition flex items-center gap-2">
+          <i class="fa-solid fa-file-signature"></i> Generator SOP, W1 & AAR Resmi
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- KONTEN UTAMA -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
+
+    <!-- ==================== TAB 1: KONSULTAN KONTEKSTUAL KLB ==================== -->
+    <section id="panel-konsultan" class="tab-panel grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Panel Kiri: Parameter Konteks Pertanyaan Klien -->
+      <div class="lg:col-span-5 bg-white rounded-2xl p-5 shadow-sm border border-slate-200 space-y-4 h-fit">
+        <div class="flex items-center justify-between border-b pb-3">
+          <div>
+            <h2 class="font-bold text-slate-900 text-base flex items-center gap-2">
+              <i class="fa-solid fa-compass-drafting text-teal-600"></i> Parameter Konteks Kasus Klien
+            </h2>
+            <p class="text-xs text-slate-500">Sesuaikan konteks agar jawaban spesifik & siap tindak lanjut</p>
+          </div>
+          <span id="aiModeIndicator" class="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700">Pakar Internal</span>
+        </div>
+
+        <div class="space-y-3 text-sm">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">1. Fase Penanggulangan Epidemiologi</label>
+            <select id="ctxPhase" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-slate-50 font-medium">
+              <option value="Investigasi Saat KLB (Penyelidikan Epidemiologi / PE & Respons Cepat 24 Jam)">Saat KLB: Investigasi PE, Form W1 (<24 Jam) & TGC</option>
+              <option value="Perencanaan Pra-KLB (Kesiapsiagaan, SKDR/EWARS & Contingency Plan)">Pra-KLB: Kesiapsiagaan, Sinyal SKDR/EWARS & Contingency Plan</option>
+              <option value="Evaluasi Pasca-KLB (After Action Review / AAR & Rencana Tindak Lanjut)">Pasca-KLB: Evaluasi After Action Review (AAR) & Perbaikan Sistem</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">2. Jenis Penyakit / Kejadian Berpotensi KLB</label>
+            <select id="ctxDisease" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-slate-50 font-medium">
+              <option value="Keracunan Pangan Massal (Foodborne Outbreak)">Keracunan Pangan Massal (Hajatan / MBG / Sekolah / Katering)</option>
+              <option value="Demam Berdarah Dengue (DBD) / Arbovirosis">Demam Berdarah Dengue (DBD) / Chikungunya</option>
+              <option value="Campak / Rubella / Difteri / Pertusis (PD3I)">KLB PD3I (Campak / Difteri / Pertusis / Polio)</option>
+              <option value="Diare Akut / Kolera / Gastroenteritis">Diare Akut / Gastroenteritis</option>
+              <option value="GHPR (Gigitan Hewan Penular Rabies) / Zoonosis">GHPR (Rabies) / Leptospirosis / Antraks</option>
+              <option value="ISPA Berat / Pneumonia / ILI-SARI">ISPA Berat / Pneumonia / Cluster ILI-SARI</option>
+              <option value="Penyakit Infeksi Emerging / Klaster Sindrom Tidak Dikenal">Penyakit Infeksi Emerging / Klaster Sindrom Belum Diketahui</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">3. Setting Lokasi</label>
+              <input type="text" id="ctxLocation" value="Desa / Sekolah Wilayah Puskesmas" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">4. Estimasi Populasi Berisiko</label>
+              <input type="text" id="ctxPop" value="150 orang (35 bergejala)" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">5. Pertanyaan / Situasi Detail Klien di Lapangan</label>
+            <textarea id="ctxQuestion" rows="4" placeholder="Contoh: Baru saja ada laporan 35 siswa SD mual, muntah, dan pusing 2 jam setelah makan siang bersama. Apa langkah PE 24 jam pertama, cara menyusun kuesioner food recall, perhitungan Attack Rate, dan pelaporan W1 ke Dinkes?" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500"></textarea>
+          </div>
+
+          <!-- Template Pertanyaan Cepat -->
+          <div>
+            <span class="block text-[11px] font-semibold text-slate-500 mb-1.5">Contoh Skenario Cepat (Klik untuk isi otomatis):</span>
+            <div class="flex flex-wrap gap-1.5">
+              <button onclick="setQuickPrompt('keracunan')" class="text-xs bg-teal-50 hover:bg-teal-100 text-teal-800 px-2.5 py-1 rounded-lg border border-teal-200 transition">KLB Keracunan Pangan</button>
+              <button onclick="setQuickPrompt('dbd')" class="text-xs bg-teal-50 hover:bg-teal-100 text-teal-800 px-2.5 py-1 rounded-lg border border-teal-200 transition">Lonjakan Kasus DBD (SKDR)</button>
+              <button onclick="setQuickPrompt('campak')" class="text-xs bg-teal-50 hover:bg-teal-100 text-teal-800 px-2.5 py-1 rounded-lg border border-teal-200 transition">Suspek KLB Campak</button>
+              <button onclick="setQuickPrompt('aar')" class="text-xs bg-teal-50 hover:bg-teal-100 text-teal-800 px-2.5 py-1 rounded-lg border border-teal-200 transition">Evaluasi AAR Pasca-KLB</button>
+            </div>
+          </div>
+
+          <button onclick="runContextualAnalysis()" id="btnAnalyze" class="w-full py-3 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Analisis & Susun Rekomendasi Epidemiologi Detail
+          </button>
+        </div>
+      </div>
+
+      <!-- Panel Kanan: Output Analisis Epidemiolog Ahli -->
+      <div class="lg:col-span-7 bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col justify-between min-h-[540px]">
+        <div>
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b pb-3 mb-4">
+            <div>
+              <h2 class="font-bold text-slate-900 text-base flex items-center gap-2">
+                <i class="fa-solid fa-clipboard-check text-teal-600"></i> Hasil Telaah & Strategi Epidemiolog Ahli
+              </h2>
+              <p class="text-xs text-slate-500">Berbasis Pedoman Penyelidikan Epidemiologi, SKDR/EWARS & Permenkes</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="copyAnalysisResult()" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5">
+                <i class="fa-regular fa-copy"></i> Salin
+              </button>
+              <button onclick="exportAnalysisToDoc()" class="px-3 py-1.5 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 text-xs font-semibold flex items-center gap-1.5">
+                <i class="fa-solid fa-file-word"></i> Unduh .DOC
+              </button>
+            </div>
+          </div>
+
+          <div id="analysisOutput" class="prose prose-sm max-w-none text-slate-700 space-y-4 leading-relaxed overflow-y-auto max-h-[600px] pr-1">
+            <!-- Default Welcome Content -->
+            <div class="p-4 rounded-xl bg-teal-50/70 border border-teal-200 text-teal-900">
+              <p class="font-bold text-sm mb-1"><i class="fa-solid fa-circle-info mr-1"></i> Selamat Datang di Meja Kerja Epidemiolog Puskesmas Ahli</p>
+              <p class="text-xs leading-relaxed">
+                Pilih parameter kasus di panel kiri atau ketik pertanyaan spesifik klien untuk mendapatkan **Kerangka Kerja Penanggulangan Populasi/Komunitas**, mulai dari verifikasi rumor/sinyal SKDR, definisi operasional kasus (*Suspek, Probabel, Konfirmasi*), desain kuesioner *Line List / Food Recall*, analisis *Attack Rate* & *Relative Risk*, hingga rencana pengendalian faktor risiko lingkungan.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+          <span>Catatan Etik: Fokus pada intervensi epidemiologi populasi & surveilans, bukan peresepan klinis individu.</span>
+          <span id="timestampAnalysis">-</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: KALKULATOR AR, CFR & RELATIVE RISK (2x2) ==================== -->
+    <section id="panel-kalkulator" class="tab-panel hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Kalkulator 1: Attack Rate & CFR -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
+          <h2 class="font-bold text-slate-900 text-base flex items-center gap-2 border-b pb-3">
+            <i class="fa-solid fa-percent text-teal-600"></i> 1. Kalkulator Attack Rate (AR) & Case Fatality Rate (CFR)
+          </h2>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Jumlah Kasus Baru (Sakit)</label>
+              <input type="number" id="calcCases" value="35" oninput="calculateBasicEpi()" class="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Populasi Berisiko (*At Risk*)</label>
+              <input type="number" id="calcPop" value="150" oninput="calculateBasicEpi()" class="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Jumlah Kasus Meninggal</label>
+              <input type="number" id="calcDeaths" value="1" oninput="calculateBasicEpi()" class="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 pt-2">
+            <div class="p-4 rounded-xl bg-teal-50 border border-teal-200">
+              <span class="text-xs font-bold uppercase text-teal-700">Attack Rate (AR)</span>
+              <div id="resAR" class="text-2xl font-extrabold text-teal-900 mt-1">23.33%</div>
+              <p class="text-[11px] text-teal-700 mt-1">Rumus: (Kasus Baru / Populasi Berisiko) × 100%</p>
+            </div>
+            <div class="p-4 rounded-xl bg-rose-50 border border-rose-200">
+              <span class="text-xs font-bold uppercase text-rose-700">Case Fatality Rate (CFR)</span>
+              <div id="resCFR" class="text-2xl font-extrabold text-rose-900 mt-1">2.86%</div>
+              <p class="text-[11px] text-rose-700 mt-1">Rumus: (Meninggal / Total Kasus) × 100%</p>
+            </div>
+          </div>
+          <div id="interpBasic" class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 leading-relaxed"></div>
+        </div>
+
+        <!-- Kalkulator 2: Tabel 2x2 Food Recall / Pajanan (Relative Risk & Odds Ratio) -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
+          <h2 class="font-bold text-slate-900 text-base flex items-center gap-2 border-b pb-3">
+            <i class="fa-solid fa-table-cells text-teal-600"></i> 2. Analisis Tabel 2x2 Pajanan / *Food Recall* (RR & OR)
+          </h2>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Nama Pangan / Faktor Risiko yang Diuji</label>
+            <input type="text" id="foodItemName" value="Ayam Suwir Bumbu Kemasan" oninput="calculate2x2()" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-medium" />
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs sm:text-sm border-collapse">
+              <thead>
+                <tr class="bg-slate-100 text-slate-700">
+                  <th class="border p-2 text-left">Status Pajanan / Konsumsi</th>
+                  <th class="border p-2 text-center">Sakit (+)</th>
+                  <th class="border p-2 text-center">Tidak Sakit (-)</th>
+                  <th class="border p-2 text-center">Total & AR Spesifik</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="border p-2 font-semibold bg-slate-50">Terpajan / Makan (Exposed)</td>
+                  <td class="border p-1.5"><input type="number" id="cellA" value="30" oninput="calculate2x2()" class="w-full text-center py-1 rounded border border-teal-300 font-bold" /> <span class="text-[10px] text-slate-400">(a)</span></td>
+                  <td class="border p-1.5"><input type="number" id="cellB" value="20" oninput="calculate2x2()" class="w-full text-center py-1 rounded border border-slate-300 font-bold" /> <span class="text-[10px] text-slate-400">(b)</span></td>
+                  <td class="border p-2 text-center font-bold text-teal-800" id="rowExposedTotal">50 (AR: 60.0%)</td>
+                </tr>
+                <tr>
+                  <td class="border p-2 font-semibold bg-slate-50">Tidak Terpajan / Tidak Makan</td>
+                  <td class="border p-1.5"><input type="number" id="cellC" value="5" oninput="calculate2x2()" class="w-full text-center py-1 rounded border border-slate-300 font-bold" /> <span class="text-[10px] text-slate-400">(c)</span></td>
+                  <td class="border p-1.5"><input type="number" id="cellD" value="95" oninput="calculate2x2()" class="w-full text-center py-1 rounded border border-slate-300 font-bold" /> <span class="text-[10px] text-slate-400">(d)</span></td>
+                  <td class="border p-2 text-center font-bold text-slate-700" id="rowUnexposedTotal">100 (AR: 5.0%)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="p-3.5 rounded-xl bg-indigo-50 border border-indigo-200">
+              <span class="text-xs font-bold uppercase text-indigo-700">Relative Risk (RR)</span>
+              <div id="resRR" class="text-2xl font-extrabold text-indigo-900 mt-0.5">12.00</div>
+              <p class="text-[11px] text-indigo-700">Rumus: $[a/(a+b)] \div [c/(c+d)]$</p>
+            </div>
+            <div class="p-3.5 rounded-xl bg-amber-50 border border-amber-200">
+              <span class="text-xs font-bold uppercase text-amber-700">Odds Ratio (OR)</span>
+              <div id="resOR" class="text-2xl font-extrabold text-amber-900 mt-0.5">28.50</div>
+              <p class="text-[11px] text-amber-700">Rumus: $(a \times d) \div (b \times c)$</p>
+            </div>
+          </div>
+          <div id="interp2x2" class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 leading-relaxed"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: LINE LIST & KURVA EPIDEMIK ==================== -->
+    <section id="panel-linelist" class="tab-panel hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Input Line List -->
+        <div class="lg:col-span-4 bg-white rounded-2xl p-5 shadow-sm border border-slate-200 space-y-3 h-fit">
+          <h2 class="font-bold text-slate-900 text-base flex items-center gap-2 border-b pb-2.5">
+            <i class="fa-solid fa-user-plus text-teal-600"></i> Tambah Kasus ke *Line List* PE
+          </h2>
+          <div class="space-y-2.5 text-xs sm:text-sm">
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Inisial / Kode Pasien</label>
+              <input type="text" id="llName" placeholder="Contoh: Tn. A / An. R" class="w-full px-3 py-2 rounded-lg border border-slate-300" />
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block font-semibold text-slate-700 mb-1">Usia (Tahun)</label>
+                <input type="number" id="llAge" value="11" class="w-full px-3 py-2 rounded-lg border border-slate-300" />
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-700 mb-1">Jenis Kelamin</label>
+                <select id="llGender" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white">
+                  <option value="L">Laki-laki (L)</option>
+                  <option value="P">Perempuan (P)</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Tanggal / Periode Mulai Sakit (*Onset*)</label>
+              <input type="date" id="llOnset" class="w-full px-3 py-2 rounded-lg border border-slate-300" />
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Gejala Dominan</label>
+              <input type="text" id="llSymptoms" value="Mual, Muntah, Diare" class="w-full px-3 py-2 rounded-lg border border-slate-300" />
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Status Akhir & Klasifikasi</label>
+              <select id="llStatus" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white">
+                <option value="Rawat Jalan (Suspek)">Rawat Jalan (Suspek)</option>
+                <option value="Rawat Inap (Probabel)">Rawat Inap (Probabel)</option>
+                <option value="Konfirmasi Lab (Sembuh)">Konfirmasi Lab (Sembuh)</option>
+                <option value="Meninggal">Meninggal</option>
+              </select>
+            </div>
+            <button onclick="addLineListRecord()" class="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl transition flex items-center justify-center gap-2 mt-2">
+              <i class="fa-solid fa-plus"></i> Simpan ke Line List & Update Kurva
+            </button>
+          </div>
+        </div>
+
+        <!-- Visualisasi Kurva Epidemik & Tabel Line List -->
+        <div class="lg:col-span-8 space-y-6">
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div>
+                <h3 class="font-bold text-slate-900 text-base">Kurva Epidemik (*Epidemic Curve*) Berdasarkan Tanggal Onset</h3>
+                <p class="text-xs text-slate-500">Digunakan untuk mengidentifikasi pola penularan (*Point Source vs Propagated*) dan periode inkubasi</p>
+              </div>
+              <button onclick="loadSampleOutbreakData()" class="text-xs px-3 py-1.5 rounded-lg bg-teal-50 text-teal-700 border border-teal-200 font-semibold hover:bg-teal-100">
+                <i class="fa-solid fa-rotate"></i> Muat Simulasi Data KLB
+              </button>
+            </div>
+            <div class="h-64">
+              <canvas id="epiCurveChart"></canvas>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <h3 class="font-bold text-slate-900 text-base">Daftar *Line List* Kasus Penyelidikan Epidemiologi</h3>
+              <div class="flex gap-2">
+                <button onclick="exportLineListCSV()" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5">
+                  <i class="fa-solid fa-file-csv"></i> Ekspor CSV / Excel
+                </button>
+                <button onclick="clearLineList()" class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold">
+                  Kosongkan
+                </button>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs text-left border-collapse">
+                <thead>
+                  <tr class="bg-slate-100 text-slate-700">
+                    <th class="border p-2">No</th>
+                    <th class="border p-2">Pasien</th>
+                    <th class="border p-2">Usia/JK</th>
+                    <th class="border p-2">Tgl Onset</th>
+                    <th class="border p-2">Gejala Klinis</th>
+                    <th class="border p-2">Status</th>
+                    <th class="border p-2 text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="lineListBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 4: GENERATOR SOP, FORM W1 & AAR RESMI ==================== -->
+    <section id="panel-dokumen" class="tab-panel hidden space-y-6">
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 no-print">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          <div class="md:col-span-2">
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Pilih Jenis Dokumen Epidemiologi Resmi</label>
+            <select id="docTypeSelect" onchange="renderOfficialDocument()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 font-semibold text-sm">
+              <option value="sop_pe">1. SOP Penyelidikan Epidemiologi (PE) & Pelaporan KLB (< 24 Jam)</option>
+              <option value="form_w1">2. Laporan Kewaspadaan KLB 24 Jam (Formulir W1 Resmi)</option>
+              <option value="aar_klb">3. Format Evaluasi After Action Review (AAR) Pasca-KLB</option>
+              <option value="contingency">4. Dokumen Rencana Kontingensi (Contingency Plan) Kesiapsiagaan KLB</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nomor Dokumen / Surat</label>
+            <input type="text" id="docNumberInput" value="440/018/SOP-PE/PKM/2026" oninput="renderOfficialDocument()" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm" />
+          </div>
+          <div class="flex gap-2">
+            <button onclick="window.print()" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-semibold rounded-xl text-xs sm:text-sm flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-print"></i> Cetak / PDF
+            </button>
+            <button onclick="downloadOfficialWord()" class="flex-1 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl text-xs sm:text-sm flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-file-word"></i> Word (.doc)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pratinjau Kertas Dokumen Resmi -->
+      <div id="officialDocPaper" class="print-area bg-white rounded-2xl p-8 sm:p-10 shadow-sm border border-slate-200 max-w-4xl mx-auto text-slate-900 text-sm leading-relaxed"></div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER RESMI ARRAIHAN ACADEMY -->
+  <footer class="bg-slate-900 text-slate-300 py-5 px-4 mt-10 border-t border-slate-800 no-print">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-teal-400"></span>
+        <span class="font-semibold text-white">EPI-PRO — Aplikasi Epidemiolog Puskesmas & Dinkes Ahli</span>
+      </div>
+      <div class="text-center sm:text-right text-slate-400">
+        Lisensi Resmi: <strong class="text-teal-400">Arraihan Academy (SWK: 085279117325 / developwebapp11@gmail.com)</strong>
+        <span class="mx-1.5">|</span>
+        Aktivasi WA: <a href="https://wa.me/6285832288819" target="_blank" class="text-emerald-400 hover:underline font-semibold">085832288819</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- LOGIKA JAVASCRIPT LENGKAP -->
+  <script>
+    // =========================================================================
+    // 1. SISTEM PEMBATASAN DEMO 5 HARI & AKTIVASI LISENSI (TANPA TAMPILKAN PIN)
+    // =========================================================================
+    const DEMO_LIMIT_DAYS = 5;
+    const STORAGE_KEYS = {
+      INSTALL_TS: 'epipro_install_timestamp_v1',
+      LICENSE_STATUS: 'epipro_license_activated_v1',
+      SETTINGS: 'epipro_settings_v1',
+      LINELIST: 'epipro_linelist_v1'
+    };
+
+    // Verifikasi kode lisensi melalui hash sederhana agar kode tidak terbaca telanjang di UI
+    function checkActivationHash(input) {
+      const clean = (input || '').trim().toUpperCase();
+      let hash = 0;
+      for (let i = 0; i < clean.length; i++) {
+        hash = ((hash << 5) - hash) + clean.charCodeAt(i);
+        hash |= 0;
+      }
+      // Mendukung kode aktivasi resmi dari Admin Arraihan Academy
+      return clean.startsWith('ARRAIHAN-EPI-') && clean.length >= 16 || hash === -1289451902;
+    }
+
+    function initDemoProtection() {
+      let installTs = localStorage.getItem(STORAGE_KEYS.INSTALL_TS);
+      if (!installTs) {
+        installTs = Date.now().toString();
+        localStorage.setItem(STORAGE_KEYS.INSTALL_TS, installTs);
+      }
+
+      const isActivated = localStorage.getItem(STORAGE_KEYS.LICENSE_STATUS) === 'PRO_ACTIVE';
+      const elapsedMs = Date.now() - parseInt(installTs, 10);
+      const elapsedDays = elapsedMs / (1000 * 60 * 60 * 24);
+      const remainingDays = Math.max(0, Math.ceil(DEMO_LIMIT_DAYS - elapsedDays));
+
+      const badge = document.getElementById('demoBadge');
+      const statusText = document.getElementById('demoStatusText');
+      const closeBtn = document.getElementById('closeModalBtn');
+
+      if (isActivated) {
+        badge.className = 'px-3 py-1.5 rounded-xl text-xs font-bold border border-emerald-300 bg-emerald-50 text-emerald-800 flex items-center gap-1.5';
+        statusText.innerText = 'Lisensi PRO Aktif';
+        return true;
+      }
+
+      if (elapsedDays >= DEMO_LIMIT_DAYS) {
+        badge.className = 'px-3 py-1.5 rounded-xl text-xs font-bold border border-rose-300 bg-rose-50 text-rose-700 flex items-center gap-1.5';
+        statusText.innerText = 'Demo 5 Hari Berakhir (Terkunci)';
+        closeBtn.classList.add('hidden');
+        document.getElementById('modalTitle').innerText = 'Masa Demo 5 Hari Telah Berakhir';
+        document.getElementById('modalDesc').innerText = 'Masa uji coba gratis selama 5 hari telah habis. Untuk melanjutkan penggunaan penuh EPI-PRO, silakan hubungi Admin via WhatsApp: 085832288819 untuk aktivasi.';
+        document.getElementById('activationModal').classList.remove('hidden');
+        return false;
+      } else {
+        badge.className = 'px-3 py-1.5 rounded-xl text-xs font-bold border border-amber-300 bg-amber-50 text-amber-800 flex items-center gap-1.5';
+        statusText.innerText = `Mode Demo: Sisa ${remainingDays} Hari`;
+        return true;
+      }
+    }
+
+    function openActivationModal() {
+      document.getElementById('activationModal').classList.remove('hidden');
+    }
+
+    function closeActivationModal() {
+      const installTs = parseInt(localStorage.getItem(STORAGE_KEYS.INSTALL_TS) || Date.now(), 10);
+      const elapsedDays = (Date.now() - installTs) / (1000 * 60 * 60 * 24);
+      const isActivated = localStorage.getItem(STORAGE_KEYS.LICENSE_STATUS) === 'PRO_ACTIVE';
+      if (!isActivated && elapsedDays >= DEMO_LIMIT_DAYS) return;
+      document.getElementById('activationModal').classList.add('hidden');
+    }
+
+    function verifyLicenseKey() {
+      const val = document.getElementById('licenseKeyInput').value;
+      const err = document.getElementById('licenseError');
+      if (checkActivationHash(val)) {
+        localStorage.setItem(STORAGE_KEYS.LICENSE_STATUS, 'PRO_ACTIVE');
+        err.classList.add('hidden');
+        document.getElementById('activationModal').classList.add('hidden');
+        initDemoProtection();
+        alert('Selamat! Lisensi EPI-PRO Anda berhasil diaktifkan.');
+      } else {
+        err.classList.remove('hidden');
+      }
+    }
+
+    // =========================================================================
+    // 2. PENGATURAN INSTANSI & INTEGRASI AI PENGGUNA (GEMINI 3.8 FLASH BYOK)
+    // =========================================================================
+    function getAppSettings() {
+      const raw = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+      const defaults = {
+        puskesmas: 'UPTD Puskesmas Sukadana',
+        kabupaten: 'Kabupaten Lampung Timur',
+        petugas: 'Sudarsih, SKM',
+        aiModel: 'gemini-3.8-flash',
+        apiKey: '',
+        gasUrl: ''
+      };
+      return raw ? { ...defaults, ...JSON.parse(raw) } : defaults;
+    }
+
+    function loadSettingsToUI() {
+      const cfg = getAppSettings();
+      document.getElementById('cfgPuskesmas').value = cfg.puskesmas;
+      document.getElementById('cfgKabupaten').value = cfg.kabupaten;
+      document.getElementById('cfgPetugas').value = cfg.petugas;
+      document.getElementById('cfgAiModel').value = cfg.aiModel;
+      document.getElementById('cfgApiKey').value = cfg.apiKey;
+      document.getElementById('cfgGasUrl').value = cfg.gasUrl;
+
+      document.getElementById('headerSubtitle').innerText = `${cfg.puskesmas} • ${cfg.kabupaten} (${cfg.petugas})`;
+      const aiBadge = document.getElementById('aiModeIndicator');
+      if (cfg.apiKey && cfg.apiKey.trim().length > 10) {
+        aiBadge.innerText = `AI Online: ${cfg.aiModel}`;
+        aiBadge.className = 'text-[11px] font-bold px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300';
+      } else {
+        aiBadge.innerText = 'Engine Pakar Internal + Siap BYOK';
+        aiBadge.className = 'text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700';
+      }
+    }
+
+    function toggleSettingsModal(show) {
+      const modal = document.getElementById('settingsModal');
+      if (show) {
+        loadSettingsToUI();
+        modal.classList.remove('hidden');
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
+
+    function saveAppSettings() {
+      const cfg = {
+        puskesmas: document.getElementById('cfgPuskesmas').value.trim() || 'UPTD Puskesmas',
+        kabupaten: document.getElementById('cfgKabupaten').value.trim() || 'Kabupaten Lampung Timur',
+        petugas: document.getElementById('cfgPetugas').value.trim() || 'Epidemiolog Kesehatan',
+        aiModel: document.getElementById('cfgAiModel').value,
+        apiKey: document.getElementById('cfgApiKey').value.trim(),
+        gasUrl: document.getElementById('cfgGasUrl').value.trim()
+      };
+      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(cfg));
+      loadSettingsToUI();
+      renderOfficialDocument();
+      toggleSettingsModal(false);
+    }
+
+    // =========================================================================
+    // 3. KONSULTAN EPIDEMIOLOG KONTEKSTUAL (ONLINE GEMINI + PAKAR INTERNAL)
+    // =========================================================================
+    function setQuickPrompt(type) {
+      if (type === 'keracunan') {
+        document.getElementById('ctxPhase').selectedIndex = 0;
+        document.getElementById('ctxDisease').selectedIndex = 0;
+        document.getElementById('ctxLocation').value = 'SDN 1 Wilayah Kerja Puskesmas';
+        document.getElementById('ctxPop').value = '150 siswa (35 sakit, 0 meninggal)';
+        document.getElementById('ctxQuestion').value = 'Terjadi klaster mual, muntah, dan pusing pada 35 dari 150 siswa sekitar 2-3 jam pasca konsumsi makanan katering sekolah. Berikan langkah PE 24 jam pertama, desain tabel Food Recall, cara menghitung Attack Rate & Relative Risk untuk menentukan menu penyebab, serta draf pelaporan W1 ke Dinkes.';
+      } else if (type === 'dbd') {
+        document.getElementById('ctxPhase').selectedIndex = 0;
+        document.getElementById('ctxDisease').selectedIndex = 1;
+        document.getElementById('ctxLocation').value = 'Desa Endemis RW 04';
+        document.getElementById('ctxPop').value = '1.250 jiwa (14 kasus dalam 2 minggu)';
+        document.getElementById('ctxQuestion').value = 'Muncul alert SKDR lonjakan kasus DBD 2 kali lipat dibanding periode yang sama tahun lalu. Bagaimana langkah PE radius 100 meter, pemeriksaan Angka Bebas Jentik (ABJ), kriteria penetapan KLB DBD, dan kapan fogging fokus direkomendasikan?';
+      } else if (type === 'campak') {
+        document.getElementById('ctxPhase').selectedIndex = 0;
+        document.getElementById('ctxDisease').selectedIndex = 2;
+        document.getElementById('ctxLocation').value = 'Posyandu & PAUD Desa';
+        document.getElementById('ctxPop').value = '85 balita (6 suspek demam + ruam makulopapular)';
+        document.getElementById('ctxQuestion').value = 'Ditemukan 6 balita dengan demam dan ruam makulopapular disertai batuk/pilek/konjungtivitis. Bagaimana kriteria KLB Campak, tata cara pengambilan spesimen serum/urin untuk lab, pelacakan kontak erat, dan Outbreak Response Immunization (ORI)?';
+      } else if (type === 'aar') {
+        document.getElementById('ctxPhase').selectedIndex = 2;
+        document.getElementById('ctxDisease').selectedIndex = 0;
+        document.getElementById('ctxLocation').value = 'Wilayah Kerja Puskesmas';
+        document.getElementById('ctxPop').value = 'Evaluasi Tim Gerak Cepat (TGC)';
+        document.getElementById('ctxQuestion').value = 'KLB telah dinyatakan berakhir setelah melewati 2 kali masa inkubasi terpanjang tanpa kasus baru. Buatkan kerangka evaluasi After Action Review (AAR) yang menilai kecepatan deteksi SKDR, respons TGC <24 jam, koordinasi lintas sektor, dan Rencana Tindak Lanjut (RTL).';
+      }
+    }
+
+    async function runContextualAnalysis() {
+      if (!initDemoProtection()) return;
+
+      const cfg = getAppSettings();
+      const phase = document.getElementById('ctxPhase').value;
+      const disease = document.getElementById('ctxDisease').value;
+      const location = document.getElementById('ctxLocation').value;
+      const pop = document.getElementById('ctxPop').value;
+      const question = document.getElementById('ctxQuestion').value.trim() || 'Berikan panduan penyelidikan epidemiologi, perhitungan risiko, dan pengendalian populasi secara lengkap.';
+
+      const btn = document.getElementById('btnAnalyze');
+      const out = document.getElementById('analysisOutput');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyusun Analisis Epidemiologi Kontekstual...';
+
+      const systemPrompt = `Anda adalah Epidemiolog Puskesmas & Dinas Kesehatan Ahli di ${cfg.puskesmas}, ${cfg.kabupaten} (Pendamping teknis untuk ${cfg.petugas}).
+Konteks Kasus Klien:
+- Fase: ${phase}
+- Penyakit/Kejadian: ${disease}
+- Lokasi: ${location}
+- Populasi Berisiko: ${pop}
+- Pertanyaan/Situasi Klien: ${question}
+
+Instruksi Wajib:
+1. Berikan jawaban terstruktur berbasis bukti dengan terminologi epidemiologi resmi (SKDR/EWARS, TGC, Definisi Operasional Kasus Suspek/Probabel/Konfirmasi, Form W1 <24 Jam, Line List, Attack Rate, CFR, Relative Risk/Odds Ratio).
+2. Sertakan langkah operasional di tingkat komunitas/populasi, pengambilan spesimen/sampel lingkungan, dan koordinasi lintas sektor.
+3. JANGAN memberikan resep pengobatan klinis spesifik per pasien; fokus pada tata laksana kesehatan masyarakat dan pengendalian wabah.
+4. Sajikan rumus dan simulasi perhitungan secara jelas dan akurat.`;
+
+      let htmlResult = '';
+
+      if (cfg.apiKey && cfg.apiKey.length > 10) {
+        try {
+          // Mendukung model pilihan pengguna (termasuk gemini-3.8-flash dengan fallback otomatis ke gemini-2.5-flash bila endpoint memerlukan versi produksi)
+          const modelsToTry = [cfg.aiModel, 'gemini-2.5-flash'];
+          let responseText = null;
+
+          for (const mdl of modelsToTry) {
+            const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${mdl}:generateContent?key=${encodeURIComponent(cfg.apiKey)}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: systemPrompt }] }]
+              })
+            });
+            if (resp.ok) {
+              const data = await resp.json();
+              responseText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (responseText) break;
+            }
+          }
+
+          if (responseText) {
+            htmlResult = formatMarkdownToHtml(responseText);
+          } else {
+            htmlResult = generateExpertOfflineResponse(cfg, phase, disease, location, pop, question);
+          }
+        } catch (err) {
+          htmlResult = generateExpertOfflineResponse(cfg, phase, disease, location, pop, question);
+        }
+      } else {
+        htmlResult = generateExpertOfflineResponse(cfg, phase, disease, location, pop, question);
+      }
+
+      out.innerHTML = htmlResult;
+      document.getElementById('timestampAnalysis').innerText = 'Diperbarui: ' + new Date().toLocaleString('id-ID');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Analisis & Susun Rekomendasi Epidemiologi Detail';
+    }
+
+    function generateExpertOfflineResponse(cfg, phase, disease, location, pop, question) {
+      return `
+        <div class="space-y-4">
+          <div class="p-4 rounded-xl bg-teal-50 border border-teal-200">
+            <div class="text-xs font-bold uppercase text-teal-700 tracking-wider">Telaah Kontekstual Epidemiolog Puskesmas Ahli</div>
+            <h3 class="font-bold text-slate-900 text-base mt-0.5">${disease} — ${phase}</h3>
+            <p class="text-xs text-slate-600 mt-1"><strong>Instansi:</strong> ${cfg.puskesmas} (${cfg.kabupaten}) | <strong>Lokasi:</strong> ${location} | <strong>Populasi:</strong> ${pop}</p>
+          </div>
+
+          <div class="space-y-2">
+            <h4 class="font-bold text-slate-900 text-sm">1. Verifikasi Sinyal & Definisi Operasional Kasus (DO)</h4>
+            <ul class="list-disc pl-5 text-xs space-y-1 text-slate-700">
+              <li><strong>Konfirmasi Awal & Pelaporan W1 (&lt; 24 Jam):</strong> Verifikasi kebenaran laporan lapangan dan catat dalam <strong>Formulir W1</strong> serta input sinyal <em>Event-Based Surveillance (EBS)</em> pada aplikasi <strong>SKDR/EWARS</strong> dalam waktu kurang dari 24 jam ke Dinas Kesehatan ${cfg.kabupaten}.</li>
+              <li><strong>Definisi Operasional (DO) Kasus:</strong> Tetapkan kriteria <em>Kasus Suspek</em>, <em>Probabel</em>, dan <em>Konfirmasi</em> berdasarkan gejala klinis utama, keterkaitan epidemiologis di <strong>${location}</strong>, serta periode waktu timbulnya gejala (<em>onset</em>).</li>
+              <li><strong>Konteks Pertanyaan Klien:</strong> <em>"${question}"</em></li>
+            </ul>
+          </div>
+
+          <div class="space-y-2">
+            <h4 class="font-bold text-slate-900 text-sm">2. Langkah Penyelidikan Epidemiologi (PE) Lapangan oleh TGC</h4>
+            <ol class="list-decimal pl-5 text-xs space-y-1.5 text-slate-700">
+              <li><strong>Aktivasi Tim Gerak Cepat (TGC):</strong> Turunkan tim gabungan (Epidemiolog, Sanitarian/Kesling, Analis Lab, Promkes) dengan membawa Form PE, <em>Line List</em>, dan media transpor spesimen.</li>
+              <li><strong>Pencarian Kasus Aktif (<em>Active Case Finding</em>):</strong> Lakukan pelacakan kasus tambahan pada populasi berisiko (${pop}) di ${location} untuk mencegah <em>under-reporting</em>.</li>
+              <li><strong>Pengumpulan Spesimen & Sampel Lingkungan:</strong> Ambil spesimen biologis dari kasus dan sampel pangan/air/vektor sesuai pedoman laboratorium kesehatan masyarakat menggunakan prinsip rantai dingin (<em>cold chain</em>).</li>
+            </ol>
+          </div>
+
+          <div class="space-y-2">
+            <h4 class="font-bold text-slate-900 text-sm">3. Kerangka Analisis Epidemiologi Deskriptif & Analitik</h4>
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1.5">
+              <p><strong>• Epidemiologi Deskriptif (Orang, Tempat, Waktu):</strong> Susun distribusi kasus menurut kelompok umur & jenis kelamin (<em>Orang</em>), petakan titik kasus/spot map di ${location} (<em>Tempat</em>), dan buat <strong>Kurva Epidemik</strong> pada Tab 3 untuk menentukan apakah pola penularan bersifat <em>Point Source</em> (keracunan satu waktu) atau <em>Propagated</em> (penularan orang ke orang).</p>
+              <p><strong>• Perhitungan Ukuran Epidemiologi:</strong></p>
+              <p class="font-mono text-[11px] bg-white p-2 rounded border">
+                Attack Rate (AR) = (Jumlah Kasus Baru / Populasi Berisiko) × 100%<br/>
+                Relative Risk (RR) = AR Kelompok Terpajan (Makan) / AR Kelompok Tidak Terpajan (Tidak Makan)
+              </p>
+              <p><em>Gunakan <strong>Tab 2 (Kalkulator AR, CFR & RR 2x2)</strong> untuk menghitung nilai RR tiap item pajanan. Item dengan RR tertinggi (&gt; 1,0) dan bermakna secara statistik merupakan sumber utama penularan.</em></p>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <h4 class="font-bold text-slate-900 text-sm">4. Pengendalian Populasi, Komunikasi Risiko & Kriteria Berakhirnya KLB</h4>
+            <ul class="list-disc pl-5 text-xs space-y-1 text-slate-700">
+              <li><strong>Intervensi Sumber & Lingkungan:</strong> Hentikan sementara pajanan sumber risiko (penutupan sementara sumber pangan tercemar / pemberantasan sarang nyamuk & pengendalian vektor radius 100m / imunisasi <em>Outbreak Response</em>).</li>
+              <li><strong>Surveilans Ketat Masa Inkubasi:</strong> Pantau munculnya kasus baru hingga melewati <strong>2 kali masa inkubasi terpanjang</strong> penyakit tanpa adanya kasus baru sebelum menyatakan KLB berakhir.</li>
+              <li><strong>Evaluasi Pasca-KLB (AAR):</strong> Segera laksanakan <em>After Action Review (AAR)</em> bersama Kepala Puskesmas dan lintas sektor menggunakan draf resmi pada <strong>Tab 4</strong>.</li>
+            </ul>
+          </div>
+        </div>
+      `;
+    }
+
+    function formatMarkdownToHtml(md) {
+      let safe = md
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      safe = safe.replace(/^### (.*$)/gim, '<h4 class="font-bold text-slate-900 text-sm mt-3 mb-1">$1</h4>');
+      safe = safe.replace(/^## (.*$)/gim, '<h3 class="font-bold text-teal-800 text-base mt-4 mb-1.5 border-b pb-1">$1</h3>');
+      safe = safe.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      safe = safe.replace(/\*(.*?)\*/g, '<em>$1</em>');
+      safe = safe.replace(/\n/g, '<br/>');
+      return `<div class="text-xs sm:text-sm leading-relaxed space-y-2">${safe}</div>`;
+    }
+
+    function copyAnalysisResult() {
+      const text = document.getElementById('analysisOutput').innerText;
+      navigator.clipboard.writeText(text);
+      alert('Hasil analisis epidemiologi berhasil disalin ke clipboard.');
+    }
+
+    function exportAnalysisToDoc() {
+      const content = document.getElementById('analysisOutput').innerHTML;
+      downloadHtmlAsWord(content, 'Telaah_Epidemiologi_KLB.doc');
+    }
+
+    // =========================================================================
+    // 4. KALKULATOR EPIDEMIOLOGI (AR, CFR, RR, OR)
+    // =========================================================================
+    function calculateBasicEpi() {
+      const cases = parseFloat(document.getElementById('calcCases').value) || 0;
+      const pop = parseFloat(document.getElementById('calcPop').value) || 1;
+      const deaths = parseFloat(document.getElementById('calcDeaths').value) || 0;
+
+      const ar = (cases / pop) * 100;
+      const cfr = cases > 0 ? (deaths / cases) * 100 : 0;
+
+      document.getElementById('resAR').innerText = ar.toFixed(2) + '%';
+      document.getElementById('resCFR').innerText = cfr.toFixed(2) + '%';
+
+      document.getElementById('interpBasic').innerHTML = `
+        <strong>Interpretasi Epidemiologis:</strong> Dari <strong>${pop}</strong> populasi berisiko, terdapat <strong>${cases}</strong> kasus sakit sehingga menghasilkan <strong>Attack Rate (AR) sebesar ${ar.toFixed(2)}%</strong>. Tingkat fatalitas kasus (<strong>CFR</strong>) adalah <strong>${cfr.toFixed(2)}%</strong> (${deaths} kematian). ${cfr > 1 ? '<span class="text-rose-600 font-bold">Perhatian: CFR > 1% menunjukkan tingkat keparahan tinggi yang membutuhkan penguatan sistem rujukan populasi segera.</span>' : 'Fokuskan pada pemutusan rantai penularan di komunitas dan pemantauan ketatnya masa inkubasi.'}
+      `;
+    }
+
+    function calculate2x2() {
+      const item = document.getElementById('foodItemName').value || 'Faktor Pajanan';
+      const a = parseFloat(document.getElementById('cellA').value) || 0;
+      const b = parseFloat(document.getElementById('cellB').value) || 0;
+      const c = parseFloat(document.getElementById('cellC').value) || 0;
+      const d = parseFloat(document.getElementById('cellD').value) || 0;
+
+      const expTotal = a + b;
+      const unexpTotal = c + d;
+      const arExp = expTotal > 0 ? (a / expTotal) * 100 : 0;
+      const arUnexp = unexpTotal > 0 ? (c / unexpTotal) * 100 : 0;
+
+      const rr = arUnexp > 0 ? (arExp / arUnexp) : 0;
+      const or = (b * c) > 0 ? (a * d) / (b * c) : 0;
+
+      document.getElementById('rowExposedTotal').innerText = `${expTotal} (AR: ${arExp.toFixed(1)}%)`;
+      document.getElementById('rowUnexposedTotal').innerText = `${unexpTotal} (AR: ${arUnexp.toFixed(1)}%)`;
+      document.getElementById('resRR').innerText = rr.toFixed(2);
+      document.getElementById('resOR').innerText = or.toFixed(2);
+
+      let verdict = '';
+      if (rr > 1.5) {
+        verdict = `Kelompok yang mengonsumsi/terpajan <strong>${item}</strong> memiliki risiko sakit <strong>${rr.toFixed(2)} kali lebih besar</strong> dibandingkan kelompok yang tidak mengonsumsi (AR Terpajan ${arExp.toFixed(1)}% vs AR Tidak Terpajan ${arUnexp.toFixed(1)}%). <strong class="text-teal-700">Kesimpulan: ${item} sangat dicurigai sebagai sumber penularan utama (Suspect Source).</strong>`;
+      } else if (rr >= 1.0) {
+        verdict = `Nilai RR = ${rr.toFixed(2)} menunjukkan asosiasi lemah/netral. Lakukan pengujian tabel 2x2 pada jenis makanan atau faktor risiko lainnya untuk menemukan RR tertinggi.`;
+      } else {
+        verdict = `Nilai RR = ${rr.toFixed(2)} (< 1,0) menunjukkan bahwa <strong>${item}</strong> bukan merupakan faktor penyebab KLB.`;
+      }
+      document.getElementById('interp2x2').innerHTML = verdict;
+    }
+
+    // =========================================================================
+    // 5. MANAJEMEN LINE LIST & VISUALISASI KURVA EPIDEMIK (CHART.JS)
+    // =========================================================================
+    let epiChartInstance = null;
+
+    function getLineListData() {
+      const raw = localStorage.getItem(STORAGE_KEYS.LINELIST);
+      if (raw) return JSON.parse(raw);
+      return [
+        { name: 'An. R', age: 10, gender: 'L', onset: '2026-11-08', symptoms: 'Mual, Muntah', status: 'Rawat Jalan (Suspek)' },
+        { name: 'An. S', age: 11, gender: 'P', onset: '2026-11-08', symptoms: 'Muntah, Diare', status: 'Rawat Inap (Probabel)' },
+        { name: 'An. D', age: 10, gender: 'L', onset: '2026-11-09', symptoms: 'Mual, Pusing, Muntah', status: 'Rawat Inap (Probabel)' },
+        { name: 'An. F', age: 12, gender: 'P', onset: '2026-11-09', symptoms: 'Mual, Diare, Demam', status: 'Rawat Inap (Probabel)' },
+        { name: 'An. K', age: 11, gender: 'L', onset: '2026-11-09', symptoms: 'Mual, Muntah', status: 'Rawat Jalan (Suspek)' },
+        { name: 'Ny. M', age: 34, gender: 'P', onset: '2026-11-09', symptoms: 'Diare Akut, Mulas', status: 'Konfirmasi Lab (Sembuh)' },
+        { name: 'An. B', age: 10, gender: 'L', onset: '2026-11-10', symptoms: 'Mual Ringan', status: 'Rawat Jalan (Suspek)' }
+      ];
+    }
+
+    function saveLineListData(list) {
+      localStorage.setItem(STORAGE_KEYS.LINELIST, JSON.stringify(list));
+      renderLineListAndCurve();
+    }
+
+    function addLineListRecord() {
+      const name = document.getElementById('llName').value.trim() || 'Pasien Baru';
+      const age = parseInt(document.getElementById('llAge').value, 10) || 0;
+      const gender = document.getElementById('llGender').value;
+      const onset = document.getElementById('llOnset').value || new Date().toISOString().slice(0, 10);
+      const symptoms = document.getElementById('llSymptoms').value.trim() || '-';
+      const status = document.getElementById('llStatus').value;
+
+      const list = getLineListData();
+      list.push({ name, age, gender, onset, symptoms, status });
+      saveLineListData(list);
+      document.getElementById('llName').value = '';
+    }
+
+    function deleteLineListRecord(idx) {
+      const list = getLineListData();
+      list.splice(idx, 1);
+      saveLineListData(list);
+    }
+
+    function clearLineList() {
+      if (confirm('Kosongkan seluruh daftar Line List kasus?')) {
+        saveLineListData([]);
+      }
+    }
+
+    function loadSampleOutbreakData() {
+      localStorage.removeItem(STORAGE_KEYS.LINELIST);
+      renderLineListAndCurve();
+    }
+
+    function renderLineListAndCurve() {
+      const list = getLineListData();
+      const tbody = document.getElementById('lineListBody');
+      tbody.innerHTML = '';
+
+      list.forEach((item, index) => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50';
+        tr.innerHTML = `
+          <td class="border p-2 font-semibold">${index + 1}</td>
+          <td class="border p-2 font-bold text-slate-800">${item.name}</td>
+          <td class="border p-2">${item.age} Th / ${item.gender}</td>
+          <td class="border p-2 font-mono">${item.onset}</td>
+          <td class="border p-2">${item.symptoms}</td>
+          <td class="border p-2"><span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-teal-50 text-teal-800 border border-teal-200">${item.status}</span></td>
+          <td class="border p-2 text-center">
+            <button onclick="deleteLineListRecord(${index})" class="text-rose-600 hover:text-rose-800"><i class="fa-solid fa-trash"></i></button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Agregasi data untuk Kurva Epidemik berdasarkan Tanggal Onset
+      const countsByDate = {};
+      list.forEach(item => {
+        countsByDate[item.onset] = (countsByDate[item.onset] || 0) + 1;
+      });
+      const sortedDates = Object.keys(countsByDate).sort();
+      const dataCounts = sortedDates.map(d => countsByDate[d]);
+
+      const ctx = document.getElementById('epiCurveChart').getContext('2d');
+      if (epiChartInstance) epiChartInstance.destroy();
+      epiChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: sortedDates,
+          datasets: [{
+            label: 'Jumlah Kasus Berdasarkan Tanggal Onset (Kurva Epidemik)',
+            data: dataCounts,
+            backgroundColor: 'rgba(13, 148, 136, 0.82)',
+            borderColor: 'rgba(15, 118, 110, 1)',
+            borderWidth: 1.5,
+            barPercentage: 0.95,
+            categoryPercentage: 0.95
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true, ticks: { stepSize: 1 }, title: { display: true, text: 'Jumlah Kasus' } },
+            x: { title: { display: true, text: 'Tanggal Mulai Sakit (Onset)' } }
+          }
+        }
+      });
+    }
+
+    function exportLineListCSV() {
+      const list = getLineListData();
+      let csv = 'No,Nama_Inisial,Usia,JK,Tanggal_Onset,Gejala_Klinis,Status_Klasifikasi\n';
+      list.forEach((r, i) => {
+        csv += `${i + 1},"${r.name}",${r.age},${r.gender},${r.onset},"${r.symptoms}","${r.status}"\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Line_List_PE_KLB.csv';
+      a.click();
+    }
+
+    // =========================================================================
+    // 6. GENERATOR DOKUMEN RESMI (SOP PE, FORM W1, AAR, CONTINGENCY PLAN)
+    // =========================================================================
+    function renderOfficialDocument() {
+      const cfg = getAppSettings();
+      const docType = document.getElementById('docTypeSelect').value;
+      const docNum = document.getElementById('docNumberInput').value;
+      const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+      const paper = document.getElementById('officialDocPaper');
+
+      const kopSurat = `
+        <div class="text-center border-b-4 border-double border-slate-900 pb-3 mb-6">
+          <div class="text-sm font-bold uppercase tracking-wide">PEMERINTAH ${cfg.kabupaten.toUpperCase()}</div>
+          <div class="text-base font-bold uppercase">DINAS KESEHATAN</div>
+          <div class="text-xl font-extrabold uppercase tracking-wider text-teal-900">${cfg.puskesmas.toUpperCase()}</div>
+          <div class="text-xs text-slate-600 mt-0.5">Tim Gerak Cepat (TGC) & Surveilans Epidemiologi • Dokumen Resmi Penanggulangan KLB</div>
+        </div>
+      `;
+
+      if (docType === 'sop_pe') {
+        paper.innerHTML = `
+          ${kopSurat}
+          <table class="w-full text-xs border-collapse border border-slate-800 mb-5">
+            <tr>
+              <td class="border border-slate-800 p-2 font-bold w-1/4">STANDAR OPERASIONAL PROSEDUR (SOP)</td>
+              <td class="border border-slate-800 p-2 font-bold text-center text-sm" colspan="3">PENYELIDIKAN EPIDEMIOLOGI (PE) DAN PELAPORAN KLB (&lt; 24 JAM)</td>
+            </tr>
+            <tr>
+              <td class="border border-slate-800 p-1.5 font-semibold">No. Dokumen</td>
+              <td class="border border-slate-800 p-1.5">${docNum}</td>
+              <td class="border border-slate-800 p-1.5 font-semibold">Tanggal Terbit</td>
+              <td class="border border-slate-800 p-1.5">${today}</td>
+            </tr>
+            <tr>
+              <td class="border border-slate-800 p-1.5 font-semibold">Unit Kerja</td>
+              <td class="border border-slate-800 p-1.5">Surveilans Epidemiologi & TGC</td>
+              <td class="border border-slate-800 p-1.5 font-semibold">Penanggung Jawab</td>
+              <td class="border border-slate-800 p-1.5">${cfg.petugas}</td>
+            </tr>
+          </table>
+
+          <div class="space-y-3 text-xs sm:text-sm">
+            <p><strong>1. Tujuan:</strong> Menjamin kesiapsiagaan, kecepatan deteksi dini, pelaksanaan Penyelidikan Epidemiologi (PE) lapangan, dan ketepatan pelaporan Kejadian Luar Biasa (KLB) dalam waktu kurang dari 24 jam (Form W1 & SKDR).</p>
+            <p><strong>2. Dasar Hukum:</strong> UU Kesehatan No. 17 Tahun 2023, Permenkes No. 1501/MENKES/PER/X/2010 tentang Jenis Penyakit Menular Tertentu yang Dapat Menimbulkan Wabah dan Upaya Penanggulangan, serta Pedoman SKDR Kemenkes RI.</p>
+            <div>
+              <strong>3. Prosedur & Langkah-Langkah Operasional:</strong>
+              <ol class="list-decimal pl-5 mt-1 space-y-1">
+                <li><strong>Penerimaan & Verifikasi Sinyal (&le; 2 Jam):</strong> Petugas Surveilans/Epidemiolog melakukan verifikasi rumor/alert SKDR dari masyarakat, Pustu, atau fasilitas kesehatan.</li>
+                <li><strong>Pelaporan Cepat W1 (&lt; 24 Jam):</strong> Apabila memenuhi kriteria dugaan KLB, segera kirimkan Laporan W1 ke Dinas Kesehatan ${cfg.kabupaten} dan entri EBS pada SKDR.</li>
+                <li><strong>Penerjunan Tim Gerak Cepat (TGC):</strong> Melakukan pencarian kasus aktif di lapangan menggunakan instrumen <em>Line List</em> dan kuesioner <em>Food Recall</em>/faktor risiko.</li>
+                <li><strong>Pengolahan Data & Perhitungan Risiko:</strong> Menyusun Kurva Epidemik, menghitung <em>Attack Rate (AR)</em>, <em>Case Fatality Rate (CFR)</em>, dan <em>Relative Risk (RR)</em> untuk memutus mata rantai penularan di komunitas.</li>
+              </ol>
+            </div>
+          </div>
+
+          <div class="mt-10 flex justify-end text-xs">
+            <div class="text-center w-64">
+              <p>Ditetapkan di: ${cfg.kabupaten}</p>
+              <p>Pada Tanggal: ${today}</p>
+              <p class="font-bold mt-1">Epidemiolog Kesehatan / Koordinator Surveilans</p>
+              <div class="h-16"></div>
+              <p class="font-bold underline">${cfg.petugas}</p>
+            </div>
+          </div>
+        `;
+      } else if (docType === 'form_w1') {
+        paper.innerHTML = `
+          ${kopSurat}
+          <div class="text-center mb-5">
+            <h3 class="font-extrabold text-base uppercase underline">LAPORAN KEWASPADAAN KLB 24 JAM (FORMULIR W1)</h3>
+            <p class="text-xs">Nomor: ${docNum}</p>
+          </div>
+          <div class="space-y-3 text-xs sm:text-sm">
+            <p>Kepada Yth. <strong>Kepala Dinas Kesehatan ${cfg.kabupaten} (Cq. Bidang P2P / Surveilans)</strong></p>
+            <p>Bersama ini kami laporkan adanya peningkatan kasus / dugaan Kejadian Luar Biasa (KLB) di wilayah kerja <strong>${cfg.puskesmas}</strong> pada tanggal <strong>${today}</strong> dengan rincian awal sebagai berikut:</p>
+            <table class="w-full border-collapse border border-slate-800 text-xs my-3">
+              <tr><td class="border border-slate-800 p-2 font-semibold w-1/3">Jenis Penyakit / Sindrom Dugaan KLB</td><td class="border border-slate-800 p-2">${document.getElementById('ctxDisease').value}</td></tr>
+              <tr><td class="border border-slate-800 p-2 font-semibold">Lokasi Kejadian (Desa/Sekolah/RW)</td><td class="border border-slate-800 p-2">${document.getElementById('ctxLocation').value}</td></tr>
+              <tr><td class="border border-slate-800 p-2 font-semibold">Jumlah Kasus Sakit & Meninggal Saat Ini</td><td class="border border-slate-800 p-2">${document.getElementById('calcCases').value} Kasus Sakit / ${document.getElementById('calcDeaths').value} Meninggal (Populasi Berisiko: ${document.getElementById('calcPop').value})</td></tr>
+              <tr><td class="border border-slate-800 p-2 font-semibold">Attack Rate (AR) & CFR Sementara</td><td class="border border-slate-800 p-2">AR: ${document.getElementById('resAR').innerText} | CFR: ${document.getElementById('resCFR').innerText}</td></tr>
+              <tr><td class="border border-slate-800 p-2 font-semibold">Tindakan TGC yang Sedang Dilakukan</td><td class="border border-slate-800 p-2">1. Penyelidikan Epidemiologi (PE) & penyusunan Line List<br/>2. Pengambilan spesimen & pengamanan sampel faktor risiko<br/>3. Penyuluhan & pengendalian faktor risiko lingkungan</td></tr>
+            </table>
+          </div>
+          <div class="mt-8 flex justify-end text-xs">
+            <div class="text-center w-64">
+              <p>${cfg.kabupaten}, ${today}</p>
+              <p class="font-bold">Pelapor / Epidemiolog Puskesmas</p>
+              <div class="h-16"></div>
+              <p class="font-bold underline">${cfg.petugas}</p>
+            </div>
+          </div>
+        `;
+      } else if (docType === 'aar_klb') {
+        paper.innerHTML = `
+          ${kopSurat}
+          <div class="text-center mb-5">
+            <h3 class="font-extrabold text-base uppercase underline">INSTRUMEN EVALUASI PASCA-KLB (AFTER ACTION REVIEW / AAR)</h3>
+            <p class="text-xs">Nomor Dokumen: ${docNum} • Tanggal Evaluasi: ${today}</p>
+          </div>
+          <table class="w-full border-collapse border border-slate-800 text-xs">
+            <thead>
+              <tr class="bg-slate-100">
+                <th class="border border-slate-800 p-2">Komponen Inti Penanggulangan</th>
+                <th class="border border-slate-800 p-2">Target Standar</th>
+                <th class="border border-slate-800 p-2">Capaian Lapangan</th>
+                <th class="border border-slate-800 p-2">Rencana Tindak Lanjut (RTL)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="border border-slate-800 p-2 font-semibold">1. Deteksi Dini & Pelaporan W1</td>
+                <td class="border border-slate-800 p-2">Verifikasi & Laporan W1 &lt; 24 Jam sejak sinyal diterima</td>
+                <td class="border border-slate-800 p-2">Tercapai (&lt; 24 Jam via SKDR & WA Grup Surveilans)</td>
+                <td class="border border-slate-800 p-2">Memperkuat jejaring pelaporan bidan desa & sekolah</td>
+              </tr>
+              <tr>
+                <td class="border border-slate-800 p-2 font-semibold">2. Penyelidikan Epidemiologi (PE) & Lab</td>
+                <td class="border border-slate-800 p-2">Line List lengkap, Kurva Epidemik & sampel terkirim</td>
+                <td class="border border-slate-800 p-2">Analisis AR & RR selesai; sumber risiko teridentifikasi</td>
+                <td class="border border-slate-800 p-2">Menyediakan stok media transpor spesimen cadangan</td>
+              </tr>
+              <tr>
+                <td class="border border-slate-800 p-2 font-semibold">3. Pengendalian Faktor Risiko & Lintas Sektor</td>
+                <td class="border border-slate-800 p-2">Tidak ada kasus baru setelah 2x masa inkubasi terpanjang</td>
+                <td class="border border-slate-800 p-2">KLB terkendali tanpa perluasan wilayah</td>
+                <td class="border border-slate-800 p-2">Inspeksi kesehatan lingkungan berkala bersama Kecamatan/Desa</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="mt-8 flex justify-end text-xs">
+            <div class="text-center w-64">
+              <p>Disusun oleh Koordinator Evaluasi AAR,</p>
+              <div class="h-16"></div>
+              <p class="font-bold underline">${cfg.petugas}</p>
+            </div>
+          </div>
+        `;
+      } else {
+        paper.innerHTML = `
+          ${kopSurat}
+          <div class="text-center mb-5">
+            <h3 class="font-extrabold text-base uppercase underline">DOKUMEN RENCANA KONTINGENSI (CONTINGENCY PLAN) KESIAPSIAGAAN KLB</h3>
+            <p class="text-xs">Nomor: ${docNum} • Tahun Anggaran 2026</p>
+          </div>
+          <div class="space-y-3 text-xs sm:text-sm">
+            <p><strong>1. Pemetaan Risiko Wilayah:</strong> Mengidentifikasi desa/kelurahan rawan KLB berdasarkan tren mingguan SKDR, cakupan imunisasi dasar, kepadatan vektor, dan sanitasi lingkungan di wilayah ${cfg.puskesmas}.</p>
+            <p><strong>2. Kesiapsiagaan Tim Gerak Cepat (TGC):</strong> Pembentukan SK TGC Puskesmas yang terdiri dari Epidemiolog Kesehatan (${cfg.petugas}), Dokter, Sanitarian, Petugas Lab, dan Promkes dengan pembagian tugas 24/7.</p>
+            <p><strong>3. Logistik & Reagensia Surveilans:</strong> Ketersediaan Form W1, Form PE, pot spesimen, media Amies/Carry-Blair, RDT, dan bahan pengendalian vektor.</p>
+          </div>
+        `;
+      }
+    }
+
+    function downloadOfficialWord() {
+      const content = document.getElementById('officialDocPaper').innerHTML;
+      downloadHtmlAsWord(content, 'Dokumen_Resmi_Epidemiologi_Puskesmas.doc');
+    }
+
+    function downloadHtmlAsWord(htmlBody, filename) {
+      const fullHtml = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head><meta charset='utf-8'><title>Dokumen Epidemiologi</title></head>
+        <body style="font-family: Arial, sans-serif; font-size: 11pt;">${htmlBody}</body>
+        </html>
+      `;
+      const blob = new Blob(['\ufeff', fullHtml], { type: 'application/msword' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.click();
+    }
+
+    // =========================================================================
+    // 7. NAVIGASI TAB & INISIALISASI AWAL
+    // =========================================================================
+    function switchTab(tabId) {
+      if (!initDemoProtection()) return;
+      document.querySelectorAll('.tab-panel').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('tab-active'));
+      document.getElementById('panel-' + tabId).classList.remove('hidden');
+      document.getElementById('tab-' + tabId).classList.add('tab-active');
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('llOnset').value = new Date().toISOString().slice(0, 10);
+      initDemoProtection();
+      loadSettingsToUI();
+      calculateBasicEpi();
+      calculate2x2();
+      renderLineListAndCurve();
+      renderOfficialDocument();
+    });
+  </script>
+</body>
+</html>
